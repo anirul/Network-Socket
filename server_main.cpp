@@ -28,10 +28,16 @@ int main(int ac, char** av)
 	hint.sin_addr.S_un.S_addr = INADDR_ANY;
 	if (bind(listening, (sockaddr*)& hint, sizeof(hint)) == SOCKET_ERROR)
 	{
-		printf("Could not bind to address\n");
+		printf("Could not bind to address.\n");
 		return -3;
 	}
 
+	// Listen to the socket.
+	if (listen(listening, SOMAXCONN) == SOCKET_ERROR)
+	{
+		printf("Could not listen to socket.\n");
+		return -4;
+	}
 	
 	// TODO here come the code!
 
