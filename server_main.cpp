@@ -20,6 +20,13 @@ int main(int ac, char** av)
 		printf("Can't create socket!\n");
 		return -2;
 	}
+
+	// Bind the ip to the socket.
+	sockaddr_in hint;
+	hint.sin_family = AF_INET;
+	hint.sin_port = htons(42000);
+	hint.sin_addr.S_un.S_addr = INADDR_ANY;
+	bind(listening, (sockaddr*)&hint, sizeof(hint));
 	
 	// TODO here come the code!
 
