@@ -26,7 +26,12 @@ int main(int ac, char** av)
 	hint.sin_family = AF_INET;
 	hint.sin_port = htons(42000);
 	hint.sin_addr.S_un.S_addr = INADDR_ANY;
-	bind(listening, (sockaddr*)&hint, sizeof(hint));
+	if (bind(listening, (sockaddr*)& hint, sizeof(hint)) == SOCKET_ERROR)
+	{
+		printf("Could not bind to address\n");
+		return -3;
+	}
+
 	
 	// TODO here come the code!
 
