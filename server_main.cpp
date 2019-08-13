@@ -13,7 +13,16 @@ int main(int ac, char** av)
 		return -1;
 	}
 
+	// Create a listening socket.
+	SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
+	if (listening == INVALID_SOCKET)
+	{
+		printf("Can't create socket!\n");
+		return -2;
+	}
+	
 	// TODO here come the code!
+
 
 	// Close winsock.
 	WSACleanup();
