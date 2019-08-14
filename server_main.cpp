@@ -39,6 +39,14 @@ int main(int ac, char** av)
 		return -4;
 	}
 	
+	// Accept socket and accept.
+	SOCKET accept_socket = accept(listening, nullptr, nullptr);
+	if (accept_socket == INVALID_SOCKET)
+	{
+		printf("accept failed.\n");
+		return -5;
+	}
+
 	// TODO here come the code!
 
 
