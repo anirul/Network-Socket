@@ -1,7 +1,61 @@
 #include <WinSock2.h>
 #include <stdio.h>
+#include <vector>
+#include <list>
 
 #pragma comment(lib, "ws2_32.lib")
+
+bool select_recv(SOCKET sock, int interval_us = 1)
+{
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(sock, &fds);
+	timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = interval_us;
+	return (select(sock + 1, &fds, 0, 0, &tv) == 1);
+}
+
+bool check_accept(SOCKET listening, SOCKET* client_ptr)
+{
+	SOCKET client = INVALID_SOCKET;
+	if (select_recv(listening))
+	{
+		// accept incoming connections.
+		client = accept(listening, nullptr, nullptr);
+	}
+	*client_ptr = client;
+	return (client != INVALID_SOCKET);
+}
+
+bool check_recv(SOCKET client, std::vector<char>& buffer)
+{
+	int result = 0;
+	if (select_recv(client))
+	{
+		const int MAX_SIZE = 512;
+		buffer.resize(MAX_SIZE, 0);
+		result = recv(client, &buffer[0], MAX_SIZE, 0);
+		buffer.resize(result);
+		printf("Receive %d elements.\n", result);
+		if (result == 0) 
+		{
+			result = -1;
+		}
+	}
+	return (result >= 0);
+}
+
+bool check_send(SOCKET client, const std::vector<char>& buffer)
+{
+	int result = 0;
+	if (buffer.size() > 0)
+	{
+		result = send(client, &buffer[0], buffer.size(), 0);
+		printf("Send %d elements.\n", buffer.size());
+	}
+	return (result >= 0);
+}
 
 int main(int ac, char** av) 
 {
@@ -39,48 +93,42 @@ int main(int ac, char** av)
 		return -4;
 	}
 	
-	// Accept socket and accept FIXME multithread/fork/etc...?
 	printf("Wait for connection...\n");
-	SOCKET client = accept(listening, nullptr, nullptr);
-	if (client == INVALID_SOCKET)
+	std::list<SOCKET> connection_vec;
+	// start of the main loop.
+	while (true)
 	{
-		printf("accept failed.\n");
-		return -5;
-	}
-	printf("Client connected!\n");
-
-	const size_t DEFAULT_BUFLEN = 512;
-	char recvbuf[DEFAULT_BUFLEN];
-	int iResult, iSendResult;
-	int recvbuflen = DEFAULT_BUFLEN;
-
-	// Receive until the peer shuts down the connection
-	do {
-
-		iResult = recv(client, recvbuf, recvbuflen, 0);
-		if (iResult > 0) {
-			printf("Bytes received: %d\n", iResult);
-
-			// Echo the buffer back to the sender
-			iSendResult = send(client, recvbuf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed: %d\n", WSAGetLastError());
-				closesocket(client);
-				WSACleanup();
-				return 1;
+		SOCKET new_client;
+		if (check_accept(listening, &new_client))
+		{
+			connection_vec.push_back(new_client);
+			printf("New client.");
+		}
+		for (auto client : connection_vec)
+		{
+			std::vector<char> buffer;
+			if (!check_recv(client, buffer))
+			{
+				connection_vec.remove_if([client](SOCKET sock) {
+					return sock == client;
+				});
+				printf("Client disconnected on recv.");
+				break;
 			}
-			printf("Bytes sent: %d\n", iSendResult);
+			if (buffer.size() != 0)
+			{
+				if (!check_send(client, buffer))
+				{
+					connection_vec.remove_if([client](SOCKET sock) {
+						return sock == client;
+					});
+					printf("Client disconnected on send.");
+					break;
+				}
+			}
 		}
-		else if (iResult == 0)
-			printf("Connection closing...\n");
-		else {
-			printf("recv failed: %d\n", WSAGetLastError());
-			closesocket(client);
-			WSACleanup();
-			return 1;
-		}
-
-	} while (iResult > 0);
+		Sleep(1);
+	}
 
 	// Close sockets
 	closesocket(listening);
