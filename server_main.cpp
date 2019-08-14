@@ -39,17 +39,51 @@ int main(int ac, char** av)
 		return -4;
 	}
 	
-	// Accept socket and accept.
-	SOCKET accept_socket = accept(listening, nullptr, nullptr);
-	if (accept_socket == INVALID_SOCKET)
+	// Accept socket and accept FIXME multithread/fork/etc...?
+	printf("Wait for connection...\n");
+	SOCKET client = accept(listening, nullptr, nullptr);
+	if (client == INVALID_SOCKET)
 	{
 		printf("accept failed.\n");
 		return -5;
 	}
+	printf("Client connected!\n");
 
-	// TODO here come the code!
+	const size_t DEFAULT_BUFLEN = 512;
+	char recvbuf[DEFAULT_BUFLEN];
+	int iResult, iSendResult;
+	int recvbuflen = DEFAULT_BUFLEN;
 
+	// Receive until the peer shuts down the connection
+	do {
 
+		iResult = recv(client, recvbuf, recvbuflen, 0);
+		if (iResult > 0) {
+			printf("Bytes received: %d\n", iResult);
+
+			// Echo the buffer back to the sender
+			iSendResult = send(client, recvbuf, iResult, 0);
+			if (iSendResult == SOCKET_ERROR) {
+				printf("send failed: %d\n", WSAGetLastError());
+				closesocket(client);
+				WSACleanup();
+				return 1;
+			}
+			printf("Bytes sent: %d\n", iSendResult);
+		}
+		else if (iResult == 0)
+			printf("Connection closing...\n");
+		else {
+			printf("recv failed: %d\n", WSAGetLastError());
+			closesocket(client);
+			WSACleanup();
+			return 1;
+		}
+
+	} while (iResult > 0);
+
+	// Close sockets
+	closesocket(listening);
 	// Close winsock.
 	WSACleanup();
 	return 0;
