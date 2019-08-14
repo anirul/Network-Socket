@@ -53,6 +53,10 @@ bool check_send(SOCKET client, const std::vector<char>& buffer)
 	{
 		result = send(client, &buffer[0], buffer.size(), 0);
 		printf("Send %d elements.\n", buffer.size());
+		if (result == 0)
+		{
+			result = -1;
+		}
 	}
 	return (result >= 0);
 }
@@ -102,7 +106,7 @@ int main(int ac, char** av)
 		if (check_accept(listening, &new_client))
 		{
 			connection_vec.push_back(new_client);
-			printf("New client.");
+			printf("New client.\n");
 		}
 		for (auto client : connection_vec)
 		{
@@ -112,7 +116,8 @@ int main(int ac, char** av)
 				connection_vec.remove_if([client](SOCKET sock) {
 					return sock == client;
 				});
-				printf("Client disconnected on recv.");
+				closesocket(client);
+				printf("Client disconnected on recv.\n");
 				break;
 			}
 			if (buffer.size() != 0)
@@ -122,7 +127,8 @@ int main(int ac, char** av)
 					connection_vec.remove_if([client](SOCKET sock) {
 						return sock == client;
 					});
-					printf("Client disconnected on send.");
+					closesocket(client);
+					printf("Client disconnected on send.\n");
 					break;
 				}
 			}
