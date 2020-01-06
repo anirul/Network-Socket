@@ -1,9 +1,21 @@
+#if defined(_WIN32) || defined(_WIN64)
 #include <WinSock2.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
 #include <stdio.h>
 #include <vector>
 #include <list>
-
+#if defined(_WIN32) || defined(_WIN64)
 #pragma comment(lib, "ws2_32.lib")
+#else
+#define SOCKET int
+#define INVALID_SOCKET (-1)
+#define SOCKET_ERROR (-1)
+#endif
 
 bool select_recv(SOCKET sock, int interval_us = 1)
 {
@@ -38,7 +50,7 @@ bool check_recv(SOCKET client, std::vector<char>& buffer)
 		result = recv(client, &buffer[0], MAX_SIZE, 0);
 		buffer.resize(result);
 		printf("Receive %d elements.\n", result);
-		if (result == 0) 
+		if (result == 0)
 		{
 			result = -1;
 		}
@@ -52,7 +64,7 @@ bool check_send(SOCKET client, const std::vector<char>& buffer)
 	if (buffer.size() > 0)
 	{
 		result = send(client, &buffer[0], buffer.size(), 0);
-		printf("Send %d elements.\n", buffer.size());
+		printf("Send %d elements.\n", (int)buffer.size());
 		if (result == 0)
 		{
 			result = -1;
@@ -61,15 +73,17 @@ bool check_send(SOCKET client, const std::vector<char>& buffer)
 	return (result >= 0);
 }
 
-int main(int ac, char** av) 
+int main(int ac, char** av)
 {
+#if defined(_WIN32) || defined(WIN64)
 	// Initialize winsock.
 	WSADATA ws_data;
-	if (WSAStartup(MAKEWORD(2, 2), &ws_data) != 0) 
+	if (WSAStartup(MAKEWORD(2, 2), &ws_data) != 0)
 	{
 		printf("cannot initialize winsock!\n");
 		return -1;
 	}
+#endif
 
 	// Create a listening socket.
 	SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
@@ -83,7 +97,11 @@ int main(int ac, char** av)
 	sockaddr_in hint;
 	hint.sin_family = AF_INET;
 	hint.sin_port = htons(42000);
+#if defined(_WIN32) || defined(_WIN64)
 	hint.sin_addr.S_un.S_addr = INADDR_ANY;
+#else
+	hint.sin_addr.s_addr = INADDR_ANY;
+#endif
 	if (bind(listening, (sockaddr*)& hint, sizeof(hint)) == SOCKET_ERROR)
 	{
 		printf("Could not bind to address.\n");
@@ -96,7 +114,7 @@ int main(int ac, char** av)
 		printf("Could not listen to socket.\n");
 		return -4;
 	}
-	
+
 	printf("Wait for connection...\n");
 	std::list<SOCKET> connection_vec;
 	// start of the main loop.
@@ -116,7 +134,11 @@ int main(int ac, char** av)
 				connection_vec.remove_if([client](SOCKET sock) {
 					return sock == client;
 				});
+#if defined(_WIN32) || defined(_WIN64)
 				closesocket(client);
+#else
+				close(client);
+#endif
 				printf("Client disconnected on recv.\n");
 				break;
 			}
@@ -127,18 +149,28 @@ int main(int ac, char** av)
 					connection_vec.remove_if([client](SOCKET sock) {
 						return sock == client;
 					});
+#if defined(_WIN32) || defined(_WIN64)
 					closesocket(client);
+#else
+					close(client);
+#endif
 					printf("Client disconnected on send.\n");
 					break;
 				}
 			}
 		}
+#if defined(_WIN32) || defined(_WIN64)
 		Sleep(1);
+#else
+		sleep(1);
+#endif
 	}
 
-	// Close sockets
+#if defined(_WIN32) || defined(_WIN64)
 	closesocket(listening);
-	// Close winsock.
 	WSACleanup();
+#else
+	close(listening);
+#endif
 	return 0;
 }
