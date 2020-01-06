@@ -162,7 +162,7 @@ int main(int ac, char** av)
 #if defined(_WIN32) || defined(_WIN64)
 		Sleep(1);
 #else
-		sleep(1);
+		usleep(1);
 #endif
 	}
 
