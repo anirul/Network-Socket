@@ -57,11 +57,15 @@ int main(int ac, char** av) {
 	sockaddr_in server_addr;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(std::atoi(av[2]));
+#if defined(_WIN32) || defined (_WIN64)
+	server_addr.sin_addr.S_un.S_addr = inet_addr(av[1]);
+#else
 	if (inet_pton(AF_INET, av[1], &server_addr.sin_addr))
 	{
 		std::cerr << "invalid address " << av[1] << std::endl;
 		return -1;
 	}
+#endif
 	if (connect(client, (sockaddr*)&server_addr, sizeof(server_addr)) < 0)
 	{
 		std::cerr << "connection error" << std::endl;
@@ -86,9 +90,10 @@ int main(int ac, char** av) {
 		}
 		if (select_recv(client)) {
 			std::string recv_string;
-			recv_string.reserve(512);
-			recv(client, recv_string.data(), 512, 0);
-			std::cout << recv_string;
+			recv_string.resize(512);
+			int ret = recv(client, recv_string.data(), 512, 0);
+			recv_string.resize(ret);
+			std::cout << recv_string << std::endl;
 		}
 	}
 #if defined(_WIN32) || defined(_WIN64)
