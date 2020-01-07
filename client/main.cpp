@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <string>
 #include <list>
 #include <ws2tcpip.h>
 #if defined(_WIN32) || defined(_WIN64)
