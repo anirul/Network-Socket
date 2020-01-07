@@ -48,6 +48,10 @@ bool check_recv(SOCKET client, std::vector<char>& buffer)
 		const int MAX_SIZE = 512;
 		buffer.resize(MAX_SIZE, 0);
 		result = recv(client, &buffer[0], MAX_SIZE, 0);
+		if (result < 0) 
+		{
+			return false;
+		}
 		buffer.resize(result);
 		printf("Receive %d elements.\n", result);
 		if (result == 0)
