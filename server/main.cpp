@@ -102,7 +102,7 @@ int main(int ac, char** av)
 #else
 	hint.sin_addr.s_addr = INADDR_ANY;
 #endif
-	if (bind(listening, (sockaddr*)& hint, sizeof(hint)) == SOCKET_ERROR)
+	if (bind(listening, (sockaddr*)&hint, sizeof(hint)) == SOCKET_ERROR)
 	{
 		printf("Could not bind to address.\n");
 		return -3;

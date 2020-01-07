@@ -12,6 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <list>
+#include <ws2tcpip.h>
 #if defined(_WIN32) || defined(_WIN64)
 #pragma comment(lib, "ws2_32.lib")
 #else
@@ -35,14 +36,14 @@ int main(int ac, char** av) {
 	if (ac != 3)
 	{
 		std::cerr << "error incorrect argument list:" << std::endl;
-		std::cerr << "program_name client port" << std::endl;
+		std::cerr << "program_name server port" << std::endl;
 		return -1;
 	}
 #if defined(_WIN32) || defined(WIN64)
 	WSADATA ws_data;
 	if (WSAStartup(MAKEWORD(2, 2), &ws_data) != 0)
 	{
-		printf("cannot initialize winsock!\n");
+		std::cerr << "cannot initialize winsock!" << std::endl;
 		return -1;
 	}
 #endif
