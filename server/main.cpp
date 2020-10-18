@@ -150,9 +150,15 @@ int main(int ac, char** av)
 			{
 				if (!check_send(client, buffer))
 				{
-					connection_vec.remove_if([client](SOCKET sock) {
-						return sock == client;
-					});
+					connection_vec.erase(
+						std::remove_if(
+							connection_vec.begin(),
+							connection_vec.end(),
+							[client](SOCKET sock) 
+							{
+								return sock == client;
+							}), 
+						connection_vec.end());
 #if defined(_WIN32) || defined(_WIN64)
 					closesocket(client);
 #else

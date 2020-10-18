@@ -14,6 +14,7 @@
 #include <string>
 #include <list>
 #include <ws2tcpip.h>
+#include <conio.h>
 #if defined(_WIN32) || defined(_WIN64)
 #pragma comment(lib, "ws2_32.lib")
 #else
@@ -74,21 +75,49 @@ int main(int ac, char** av) {
 	std::cout << "Connected to " << av[1] << ":" << av[2] << std::endl;
 	std::cout << "\tdisconnect by typing /quit" << std::endl;
 	bool quit = false;
+	std::string input;
 	while (!quit)
 	{
-		std::cout << "> ";
-		std::string input;
-		std::cin >> input;
-		if (input.find("/quit") != std::string::npos)
+		if (_kbhit())
 		{
-			quit = true;
-			continue;
+			char c = _getch();
+			switch (c)
+			{
+				case 27:
+					return 0;
+				case 8:
+				{
+					if (!input.empty())
+						input.erase(input.size() - 1);
+					break;
+				}
+				case 10:
+				{
+					if (input.find("/quit") != std::string::npos)
+					{
+						quit = true;
+						continue;
+					}
+					if (input.size() != 0)
+					{
+						send(client, input.data(), input.size(), (size_t)0);
+						input = "";
+					}
+					break;
+				}
+				default:
+				{
+
+					if (isprint(c))
+					{
+						input += c;
+					}
+				}
+			}
+			std::cout << "\r> " << input;
 		}
-		if (input.size() != 0)
+		if (select_recv(client)) 
 		{
-			send(client, input.data(), input.size(), 0);
-		}
-		if (select_recv(client)) {
 			std::string recv_string;
 			recv_string.resize(512);
 			int ret = recv(client, recv_string.data(), 512, 0);
